@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>中国市场数据监控</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&display=swap');
+:root{--bg-deep:#061126;--glass:rgba(6,20,50,.65);--cyan:#00E5FF;--blue:#2979FF;--purple:#7C4DFF;--border-glow:rgba(0,229,255,.25);--text:#c8d6e5;--text-dim:#5a6f8a;--danger:#ff5252;--success:#00e676}
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:100vw;height:100vh;overflow:hidden;background:var(--bg-deep);font-family:'Orbitron','Microsoft YaHei','PingFang SC',sans-serif;color:var(--text);position:relative}
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background:repeating-linear-gradient(0deg,rgba(0,0,0,.12) 0px,rgba(0,0,0,.12) 1px,transparent 1px,transparent 3px);pointer-events:none;z-index:999;opacity:.3}
+#app{position:relative;z-index:1;width:100%;height:100%;display:flex;gap:12px;padding:8px 12px}
+#left-col{width:480px;flex-shrink:0;display:flex;flex-direction:column;gap:6px}
+#panel-monthly{flex:144}#panel-dept{flex:144}#panel-cities{flex:8;min-height:240px}
+#right-col{flex:1;display:flex;flex-direction:column;gap:10px}
+#kpi-row{display:flex;gap:8px;padding:0;flex-shrink:0}
+.kpi-card{flex:1;background:var(--glass);border:1px solid var(--border-glow);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden;padding:14px 0;backdrop-filter:blur(8px)}
+.kpi-card::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:1.5px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.kpi-val{font-size:20px;font-weight:900;color:#fff;text-shadow:0 0 10px rgba(0,229,255,.5);letter-spacing:1px}
+.kpi-label{font-size:9px;color:var(--text-dim);margin-top:2px;letter-spacing:1px}
+.panel{background:var(--glass);border:1px solid var(--border-glow);border-radius:8px;position:relative;overflow:hidden;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);display:flex;flex-direction:column}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);opacity:.6}
+.panel::after{content:'';position:absolute;bottom:0;right:0;width:20px;height:20px;border-right:2px solid var(--border-glow);border-bottom:2px solid var(--border-glow);opacity:.5}
+.panel-hd{display:flex;align-items:center;gap:8px;padding:8px 12px 5px;font-size:12px;font-weight:600;color:var(--cyan);letter-spacing:1.5px;flex-shrink:0}
+.panel-hd .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan),0 0 16px var(--cyan);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.panel-body{flex:1;position:relative;overflow:hidden}
+#panel-map{flex:1}
+.rank-list{padding:6px 12px 12px}
+.rank-item{display:flex;align-items:center;gap:10px;padding:6px 8px;margin-bottom:3px;border-radius:4px;background:rgba(0,229,255,.03);transition:.2s}
+.rank-item:hover{background:rgba(0,229,255,.08)}
+.rank-badge{width:26px;height:26px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
+.rank-badge.gold{background:linear-gradient(135deg,#ffd700,#ff8c00)}
+.rank-badge.silver{background:linear-gradient(135deg,#c0c0c0,#8a8a8a)}
+.rank-badge.bronze{background:linear-gradient(135deg,#cd7f32,#a0522d)}
+.rank-badge.normal{background:rgba(0,229,255,.2);color:var(--cyan)}
+.rank-name{flex:1;font-size:12px;color:#e8edf5}
+.rank-pct{font-size:12px;font-weight:700;color:var(--cyan);text-shadow:0 0 6px rgba(0,229,255,.3)}
+.rank-bar-wrap{width:90px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden}
+.rank-bar-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--blue))}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="left-col">
+    <div class="panel" id="panel-monthly">
+      <div class="panel-hd"><span class="dot"></span>25年中国境内月度销售额</div>
+      <div class="panel-body"><div id="chart-monthly" style="width:100%;height:100%;"></div></div>
+    </div>
+    <div class="panel" id="panel-dept">
+      <div class="panel-hd"><span class="dot"></span>各部门月度销售额 (2025)</div>
+      <div class="panel-body"><div id="chart-dept" style="width:100%;height:100%;"></div></div>
+    </div>
+    <div class="panel" id="panel-cities">
+      <div class="panel-hd"><span class="dot"></span>省份销售额排行 TOP 5</div>
+      <div class="panel-body"><div class="rank-list" id="rank-list"></div></div>
+    </div>
+  </div>
+  <div id="right-col">
+    <div id="kpi-row">
+      <div class="kpi-card"><div class="kpi-val">¥<span id="kv-total"></span>万</div><div class="kpi-label">境内总销售额</div></div>
+      <div class="kpi-card"><div class="kpi-val">¥<span id="kv-avg"></span>万</div><div class="kpi-label">月均销售额</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kv-rate">--</div><div class="kpi-label">净利润率</div></div>
+      <div class="kpi-card"><div class="kpi-val" id="kv-cust">--</div><div class="kpi-label">总客户数</div></div>
+    </div>
+    <div class="panel" id="panel-map">
+      <div class="panel-hd"><span class="dot"></span>各省销售额分布</div>
+      <div class="panel-body"><div id="chart-map" style="width:100%;height:100%;"></div></div>
+    </div>
+  </div>
+</div>
+<script>
+const CHN_MONTHLY=[2557.0,2121.1,3479.8,3521.2,3861.5,4272.8,3258.7,3674.5,3823.4,3293.6,3950.5,5440.0];
+const CHN_DEPT={"家用业务部":{"name":"家用业务部","data":[1449.9,1121.3,2122.4,2151.7,1663.9,1805.7,1969.4,2083.8,2283.8,1876.7,1973.6,2283.7],"total":22785.8},"工业业务部":{"name":"工业业务部","data":[861.0,760.0,1135.8,922.5,1388.7,1710.5,1033.9,1331.2,1204.8,1194.0,1662.3,2282.2],"total":15486.8},"膜设备业务部":{"name":"膜设备业务部","data":[0.0,69.5,0.0,0.8,459.0,387.3,11.1,9.3,0.0,0.0,9.4,495.2],"total":1441.7}};
+const CHN_CITIES=[{"n":"其他","t":11144.6},{"n":"深圳","t":6871.9},{"n":"上海","t":4096.3},{"n":"青岛","t":2964.5},{"n":"长沙","t":2689.3}];
+const CHN_PROVINCE_NAMES={"山东":"山东省","浙江":"浙江省","天津":"天津市","上海":"上海市","福建":"福建省","广东":"广东省","辽宁":"辽宁省","河南":"河南省","江苏":"江苏省","湖南":"湖南省","河北":"河北省","四川":"四川省","北京":"北京市","广西":"广西壮族自治区","陕西":"陕西省","湖北":"湖北省","山西":"山西省","宁夏":"宁夏回族自治区","安徽":"安徽省","重庆":"重庆市","江西":"江西省","黑龙江":"黑龙江省"};
+const CHN_PROVINCE_RAW=[{"name":"山东","value":3781},{"name":"其他","value":11175},{"name":"浙江","value":1854},{"name":"天津","value":636},{"name":"上海","value":4096},{"name":"福建","value":1168},{"name":"广东","value":9267},{"name":"辽宁","value":117},{"name":"河南","value":297},{"name":"江苏","value":1965},{"name":"湖南","value":3939},{"name":"河北","value":189},{"name":"四川","value":108},{"name":"北京","value":2673},{"name":"广西","value":917},{"name":"陕西","value":757},{"name":"湖北","value":81},{"name":"山西","value":37},{"name":"宁夏","value":14},{"name":"安徽","value":20},{"name":"重庆","value":102},{"name":"江西","value":44},{"name":"黑龙江","value":15}];
+const CHN_PROVINCE=CHN_PROVINCE_RAW.filter(function(d){return d.name!=='其他';}).map(function(d){return{name:CHN_PROVINCE_NAMES[d.name]||d.name,value:d.value};});
+const CHN_TOTAL=43254.1,CHN_AVG=3604.5;
+const months=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+
+// KPI
+document.getElementById('kv-total').textContent=CHN_TOTAL.toFixed(0);
+document.getElementById('kv-avg').textContent=CHN_AVG.toFixed(0);
+document.getElementById('kv-cust').textContent='464家';
+
+// Module 1: Monthly line
+(function(){
+  var c=echarts.init(document.getElementById('chart-monthly'));
+  c.setOption({
+    tooltip:{trigger:'axis',backgroundColor:'rgba(6,20,50,.9)',borderColor:'#00E5FF',textStyle:{color:'#c8d6e5',fontSize:11}},
+    legend:{right:6,top:2,textStyle:{color:'#5a6f8a',fontSize:10},data:['境内销售额']},
+    grid:{left:52,right:14,top:40,bottom:40},
+    xAxis:{type:'category',data:months,axisLine:{lineStyle:{color:'rgba(0,229,255,.2)'}},axisLabel:{color:'#5a6f8a',fontSize:11},axisTick:{show:false}},
+    yAxis:{type:'value',name:'万元',nameTextStyle:{color:'#5a6f8a',fontSize:11},splitLine:{lineStyle:{color:'rgba(0,229,255,.06)'}},axisLabel:{color:'#5a6f8a',fontSize:11,margin:12}},
+    series:[{name:'境内销售额',type:'line',data:CHN_MONTHLY,smooth:true,symbol:'circle',symbolSize:7,lineStyle:{width:3,shadowBlur:10,shadowColor:'rgba(0,229,255,.5)'},itemStyle:{color:'#00E5FF',borderColor:'#fff',borderWidth:2},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(0,229,255,.3)'},{offset:1,color:'rgba(0,229,255,0)'}])}}]
+  });
+})();
+
+// Module 2: Dept stacked bar
+(function(){
+  var c=echarts.init(document.getElementById('chart-dept'));
+  var depts=['家用业务部','工业业务部','膜设备业务部'];
+  var colors=['#00E5FF','#2979FF','#7C4DFF'];
+  var series=depts.map(function(d,i){return{name:d,type:'bar',stack:'total',data:CHN_DEPT[d].data,itemStyle:{color:colors[i]},barWidth:'55%'};});
+  c.setOption({
+    tooltip:{trigger:'axis',backgroundColor:'rgba(6,20,50,.9)',borderColor:'#00E5FF',textStyle:{color:'#c8d6e5',fontSize:11}},
+    legend:{bottom:2,textStyle:{color:'#5a6f8a',fontSize:9},itemWidth:10,itemHeight:8},
+    grid:{left:42,right:10,top:18,bottom:48},
+    xAxis:{type:'category',data:months,axisLine:{lineStyle:{color:'rgba(0,229,255,.2)'}},axisLabel:{color:'#5a6f8a',fontSize:10}},
+    yAxis:{type:'value',name:'万元',nameTextStyle:{color:'#5a6f8a',fontSize:11},splitLine:{lineStyle:{color:'rgba(0,229,255,.06)'}},axisLabel:{color:'#5a6f8a',fontSize:11,margin:12}},
+    series:series
+  });
+})();
+
+// Module 3: Province ranking
+(function(){
+  var prows=CHN_PROVINCE_RAW.filter(function(p){return p.name!=='其他';}).sort(function(a,b){return b.value-a.value;}).slice(0,5);
+  var html='';var total=CHN_TOTAL;
+  prows.forEach(function(p,i){
+    var cls=i===0?'gold':i===1?'silver':i===2?'bronze':'normal';
+    var pct=Math.round(p.value/total*1000)/10;
+    html+='<div class="rank-item"><div class="rank-badge '+cls+'">NO.'+(i+1)+'</div><span class="rank-name">'+p.name+'</span><div class="rank-bar-wrap"><div class="rank-bar-fill" style="width:'+Math.min(pct*2,100)+'%"></div></div><span class="rank-pct">¥'+p.value.toFixed(0)+'万</span></div>';
+  });
+  document.getElementById('rank-list').innerHTML=html;
+})();
+
+// Module 4: China Map
+(function(){
+  var dom=document.getElementById('chart-map'),c=echarts.init(dom);
+  function renderMap(){
+    c.setOption({
+      tooltip:{trigger:'item',backgroundColor:'rgba(6,20,50,.92)',borderColor:'#00E5FF',textStyle:{color:'#e8edf5',fontSize:12},formatter:function(p){return'<b>'+p.name+'</b><br/>境内销售额:<b style="color:#00E5FF">¥'+(p.value||'--')+'万</b>';}},
+      visualMap:{min:0,max:12000,left:'left',bottom:8,text:['高','低'],inRange:{color:['#dcfce7','#bbf7d0','#86efac','#4ade80','#22c55e','#16a34a','#15803d']},calculable:true,textStyle:{color:'#94a3b8',fontSize:11}},
+      series:[{type:'map',map:'china',roam:true,zoom:1.2,center:[105,37],label:{show:true,fontSize:9,color:'#451a03'},itemStyle:{borderColor:'rgba(255,255,255,.2)',borderWidth:.6},emphasis:{label:{show:true,fontSize:11,color:'#fff'},itemStyle:{areaColor:'#ef4444',borderColor:'#fff',borderWidth:1.5}},data:CHN_PROVINCE}]
+    });
+  }
+  fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(function(r){return r.json();}).then(function(geo){echarts.registerMap('china',geo);renderMap();}).catch(function(){c.setOption({title:{text:'中国地图加载中...',left:'center',top:'45%',textStyle:{color:'#5a6f8a',fontSize:14}}});});
+})();
+</script>
+</body>
+</html>

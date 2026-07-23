@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>澳维液体膜 · 经营仪表盘</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+<style>
+:root{--bg:#f0f2f5;--card:#fff;--pri:#1d4ed8;--suc:#0d9488;--warn:#f59e0b;--danger:#ef4444;--text:#1e293b;--tx2:#64748b;--bd:#e2e8f0;--sw:210px;--hh:108px;--sh:0 1px 3px rgba(0,0,0,.08);--sh-lg:0 4px 16px rgba(0,0,0,.1);--r:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);overflow:hidden;height:100vh}
+#header{height:var(--hh);background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;display:flex;align-items:center;padding:0 18px;gap:10px;z-index:100;position:relative}
+#header .logo{font-size:17px;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:7px}
+#header .logo .icon{width:32px;height:32px;background:linear-gradient(135deg,#38bdf8,#6366f1);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:16px}
+#header .logo span.t{color:#38bdf8}
+#header .date-group{display:flex;gap:6px;align-items:center;margin-left:14px}
+#header .date-group select{padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:12px;cursor:pointer;outline:none}
+#header .date-group select option{color:#1e293b;background:#fff}
+#header .q-btn{padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap}
+#header .q-btn:hover{background:rgba(255,255,255,.18)}
+#header .q-btn.sel{background:var(--pri);border-color:var(--pri);font-weight:600}
+.kpi-row{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.kpi-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:var(--r);padding:8px 12px;min-width:105px;text-align:center;transition:.2s;cursor:default}
+.kpi-card:hover{background:rgba(255,255,255,.13)}.kpi-card .kpi-val{font-size:18px;font-weight:700}
+.kpi-card .kpi-label{font-size:10px;color:rgba(255,255,255,.55);margin-top:1px}
+.kpi-card.up .kpi-val{color:#4ade80}.kpi-card.down .kpi-val{color:#f87171}
+#sidebar{position:fixed;left:0;top:var(--hh);bottom:0;width:var(--sw);background:var(--card);border-right:1px solid var(--bd);overflow-y:auto;z-index:90;padding:6px 0;box-shadow:var(--sh)}
+.sec-label{padding:8px 14px 3px;font-size:13px;color:var(--text);font-weight:700;letter-spacing:.5px}
+.side-btn{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:transparent;cursor:pointer;font-size:12px;color:var(--text);transition:.15s;text-align:left;border-left:3px solid transparent}
+.side-btn:hover{background:#f1f5f9}.side-btn.active{background:#eff6ff;color:var(--pri);border-left-color:var(--pri);font-weight:600}
+.side-btn .dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}.side-btn .tip{font-size:9px;color:var(--tx2);margin-left:auto}
+.mode-switch{padding:9px 14px;margin:6px 10px;border-radius:6px;background:#f8fafc;font-size:11px;color:var(--tx2);display:flex;align-items:center;gap:6px;cursor:pointer;border:1px solid var(--bd);transition:.15s}
+.mode-switch:hover{background:#f1f5f9}.mode-switch input{cursor:pointer}
+#main{position:fixed;left:var(--sw);top:var(--hh);right:0;bottom:0;overflow-y:auto;padding:8px}
+#main.single{display:flex;flex-direction:column}
+#main.multi{display:grid;grid-template-columns:repeat(auto-fill,minmax(500px,1fr));gap:8px;align-content:start}
+#main.multi.n2{grid-template-columns:repeat(2,1fr)}
+.panel{background:var(--card);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;display:flex;flex-direction:column;min-height:550px;animation:fadeIn .25s ease}
+.panel:hover{box-shadow:var(--sh-lg)}@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.panel-hd{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;border-bottom:1px solid var(--bd);background:#fafbfc;flex-shrink:0}
+.panel-hd h3{font-size:14px;font-weight:600;display:flex;align-items:center;gap:5px}
+.panel-ctls button{border:none;background:transparent;cursor:pointer;font-size:16px;padding:1px 6px;border-radius:4px;color:var(--tx2);transition:.15s}
+.panel-ctls button:hover{background:#e2e8f0;color:var(--text)}
+.panel-body{flex:1;position:relative;min-height:480px;overflow:hidden}
+.panel-body>.chart-wrap{position:absolute;top:0;left:0;right:0;bottom:0}
+.col2-layout{display:flex;gap:10px;padding:10px;position:relative;min-height:500px}
+.col2-layout>.chart-wrap{flex:1;position:relative;min-width:0;min-height:100%}
+.col2-layout>.emp-sidebar{width:300px;flex-shrink:0;overflow-y:auto;border-right:1px solid var(--bd);display:flex;flex-direction:column}
+.col2-layout>.emp-main{flex:1;position:relative;min-height:480px}
+.col2-layout>.emp-main>.chart-wrap{position:absolute;top:0;left:0;right:0;bottom:0}
+.dept-tabs{display:flex;gap:4px;padding:6px 10px;flex-wrap:wrap;border-bottom:1px solid var(--bd);flex-shrink:0}
+.dept-tab{padding:4px 12px;border-radius:14px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-size:11px;transition:.15s;color:var(--tx2);white-space:nowrap}
+.dept-tab:hover{background:#f1f5f9;color:var(--text)}.dept-tab.sel{background:var(--pri);color:#fff;border-color:var(--pri)}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1e293b;color:#fff;padding:8px 20px;border-radius:18px;font-size:12px;z-index:999;pointer-events:none;opacity:0;transition:opacity .3s}
+#toast.show{opacity:1}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(68px,1fr));gap:5px;padding:4px}
+.emp-item{display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px;border-radius:8px;transition:.15s}
+.emp-item:hover{background:#f1f5f9}.emp-item.sel{background:#eff6ff;box-shadow:0 0 0 2px var(--pri)}
+.emp-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff}
+.emp-item.sel .emp-avatar{transform:scale(1.1)}.emp-info .name{font-size:10px;color:var(--text);text-align:center}
+.emp-info .dept{font-size:8px;color:var(--tx2);text-align:center}
+@media(max-width:1200px){#main.multi{grid-template-columns:1fr}}
+@media(max-width:768px){#sidebar{width:54px}.side-btn span:not(.dot){display:none}.side-btn .tip{display:none}.sec-label{display:none}#main{left:54px}}
+</style>
+</head>
+<body>
+<div id="header">
+  <div class="logo"><div class="icon">💧</div>澳维液体膜 · 经营仪表盘</div>
+  <div class="date-group">
+    <select id="selYear"><option>2024</option><option>2025</option><option selected>2026</option></select>
+    <span style="color:rgba(255,255,255,.5);font-size:12px">年</span>
+    <select id="selMonth"><option value="">无</option><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+    <span style="color:rgba(255,255,255,.5);font-size:12px">月</span>
+    <span class="q-btn sel" data-q="0">全年</span><span class="q-btn" data-q="1">Q1</span><span class="q-btn" data-q="2">Q2</span>
+    <span class="q-btn" data-q="3">Q3</span><span class="q-btn" data-q="4">Q4</span>
+    <span class="q-btn" data-q="h1">上半年</span><span class="q-btn" data-q="h2">下半年</span>
+  </div>
+  <div class="kpi-row" id="kpiRow"></div>
+</div>
+<div id="sidebar">
+  <div class="sec-label">📊 战略层</div>
+  <button class="side-btn active" data-page="china"><span class="dot" style="background:#f59e0b"></span>中国市场地图<span class="tip">地图</span></button>
+  <button class="side-btn" data-page="world"><span class="dot" style="background:#3b82f6"></span>全球市场地图<span class="tip">地图</span></button>
+  <button class="side-btn" data-page="sales"><span class="dot" style="background:#10b981"></span>销售额分析<span class="tip">柱状+瀑布</span></button>
+  <div class="sec-label">👥 员工层</div>
+  <button class="side-btn" data-page="employee"><span class="dot" style="background:#ec4899"></span>员工业绩排名<span class="tip">棒棒糖</span></button>
+  <button class="side-btn" data-page="emp-profile"><span class="dot" style="background:#8b5cf6"></span>员工档案<span class="tip">雷达</span></button>
+  <div class="sec-label">🏢 客户层</div>
+  <button class="side-btn" data-page="purchase"><span class="dot" style="background:#14b8a6"></span>客户购买量<span class="tip">直方图</span></button>
+  <button class="side-btn" data-page="pareto"><span class="dot" style="background:#f97316"></span>帕累托分析<span class="tip">80/20</span></button>
+  <button class="side-btn" data-page="catcust"><span class="dot" style="background:#06b6d4"></span>分类客户销售额<span class="tip">分类</span></button>
+  <div class="sec-label">📦 产品层</div>
+  <button class="side-btn" data-page="prodover"><span class="dot" style="background:#84cc16"></span>产品总览<span class="tip">排行</span></button>
+  <button class="side-btn" data-page="proddetail"><span class="dot" style="background:#d946ef"></span>产品分类详情<span class="tip">三类</span></button>
+  <label class="mode-switch"><input type="checkbox" id="multiMode"> 多面板对比</label>
+</div>
+<div id="main"></div><div id="toast"></div>
+
+<script>
+// ==================== MOCK + REAL DATA ====================
+const MONTHS=['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const CITIES=['北京','上海','广州','深圳','杭州','南京','武汉','成都','重庆','西安','长沙','郑州','济南','青岛','天津','苏州','东莞','佛山','合肥','福州','株洲','湘潭','衡阳','岳阳','常德','温州','宁波','厦门','南昌','昆明','石家庄','哈尔滨'];
+const EMPLOYEES=[
+  {id:1,name:'张伟',dept:'销售一部',color:'#4f46e5',attendance:.96,sales:426,growth:12.5,calls:180,contracts:28,customerScore:92,teamwork:88},
+  {id:2,name:'李娜',dept:'销售一部',color:'#ec4899',attendance:.99,sales:389,growth:8.3,calls:210,contracts:32,customerScore:95,teamwork:90},
+  {id:3,name:'孙磊',dept:'销售一部',color:'#ef4444',attendance:.87,sales:245,growth:-8.1,calls:120,contracts:15,customerScore:72,teamwork:70},
+  {id:4,name:'赵敏',dept:'销售二部',color:'#10b981',attendance:.98,sales:355,growth:5.7,calls:168,contracts:25,customerScore:88,teamwork:85},
+  {id:5,name:'王强',dept:'销售二部',color:'#f59e0b',attendance:.91,sales:298,growth:-3.2,calls:145,contracts:19,customerScore:78,teamwork:75},
+  {id:6,name:'周雪',dept:'销售二部',color:'#8b5cf6',attendance:.97,sales:312,growth:4.2,calls:155,contracts:22,customerScore:86,teamwork:88},
+  {id:7,name:'黄婷',dept:'销售三部',color:'#d946ef',attendance:.96,sales:278,growth:2.8,calls:138,contracts:18,customerScore:84,teamwork:82},
+  {id:8,name:'林杰',dept:'销售三部',color:'#0ea5e9',attendance:.94,sales:265,growth:1.5,calls:132,contracts:17,customerScore:81,teamwork:80},
+  {id:9,name:'徐凯',dept:'销售四部',color:'#84cc16',attendance:.92,sales:330,growth:6.5,calls:160,contracts:24,customerScore:89,teamwork:86},
+  {id:10,name:'何美',dept:'销售四部',color:'#f43f5e',attendance:.98,sales:290,growth:3.1,calls:142,contracts:20,customerScore:85,teamwork:84},
+  {id:11,name:'高峰',dept:'销售一部',color:'#6366f1',attendance:.90,sales:410,growth:10.2,calls:195,contracts:30,customerScore:91,teamwork:87},
+  {id:12,name:'沈洁',dept:'销售三部',color:'#14b8a6',attendance:.95,sales:258,growth:-1.8,calls:128,contracts:16,customerScore:79,teamwork:78},
+  {id:13,name:'陈刚',dept:'生产部',color:'#f97316',attendance:1.0,sales:0,growth:0,calls:0,contracts:0,customerScore:85,teamwork:95},
+  {id:14,name:'罗勇',dept:'生产部',color:'#a855f7',attendance:.98,sales:0,growth:0,calls:0,contracts:0,customerScore:82,teamwork:94},
+  {id:15,name:'谢涛',dept:'生产部',color:'#06b6d4',attendance:.96,sales:0,growth:0,calls:0,contracts:0,customerScore:80,teamwork:92},
+  {id:16,name:'刘芳',dept:'技术部',color:'#eab308',attendance:.95,sales:0,growth:0,calls:0,contracts:0,customerScore:90,teamwork:92},
+  {id:17,name:'吴昊',dept:'技术部',color:'#22d3ee',attendance:.93,sales:0,growth:0,calls:0,contracts:0,customerScore:91,teamwork:88},
+  {id:18,name:'江宇',dept:'研发部',color:'#a3e635',attendance:.97,sales:0,growth:0,calls:0,contracts:0,customerScore:88,teamwork:90},
+  {id:19,name:'唐颖',dept:'研发部',color:'#fb923c',attendance:.94,sales:0,growth:0,calls:0,contracts:0,customerScore:86,teamwork:89},
+  {id:20,name:'郑丽',dept:'财务部',color:'#34d399',attendance:.99,sales:0,growth:0,calls:0,contracts:0,customerScore:82,teamwork:90},
+  {id:21,name:'马超',dept:'市场部',color:'#818cf8',attendance:.94,sales:0,growth:0,calls:0,contracts:0,customerScore:88,teamwork:86},
+  {id:22,name:'彭慧',dept:'财务部',color:'#fbbf24',attendance:.98,sales:0,growth:0,calls:0,contracts:0,customerScore:84,teamwork:91},
+  {id:23,name:'曹磊',dept:'质管部',color:'#c084fc',attendance:.96,sales:0,growth:0,calls:0,contracts:0,customerScore:87,teamwork:85},
+  {id:24,name:'邓芳',dept:'市场部',color:'#38bdf8',attendance:.93,sales:0,growth:0,calls:0,contracts:0,customerScore:85,teamwork:83},
+  {id:25,name:'崔浩',dept:'质管部',color:'#fb7185',attendance:.95,sales:0,growth:0,calls:0,contracts:0,customerScore:83,teamwork:87},
+];
+
+// ==================== REAL CUSTOMER DATA (from Excel) ====================
+const R_P=[{"n":"格腾（浙江）环保设备有限公司","v":3165},{"n":"深圳瑞上德新材料有限公司","v":3042},{"n":"青岛海达源采购服务有限公司","v":2125},{"n":"上海巍肯环保科技有限公司","v":2081},{"n":"北京海德能环境治理有限公司","v":1332},{"n":"亚能环保（深圳）有限公司","v":1319},{"n":"长沙清润新材料科技有限公司","v":1257},{"n":"MAX PURE WATER ","v":1169},{"n":"长沙芷兰进出口贸易有限公司","v":1158},{"n":"山东涞特源环保科技有限公司","v":1040},{"n":"厦门百霖净水科技有限公司","v":1032},{"n":"上海万承环保科技有限公司","v":991}];
+const R_H={"0-50":345,"50-100":50,"100-300":43,"300-500":20,"500-800":6,"800-1200":7,"1200-1800":3,"1800-2500":2,"2500+":2};
+const R_C={"家用":[{"n":"格腾（浙江）环保设备有限公司","t":3165.42,"q":{"Q1":602.69,"Q2":1073.9,"Q3":792.77,"Q4":696.06}},{"n":"深圳瑞上德新材料有限公司","t":3042.44,"q":{"Q1":438.51,"Q2":490.83,"Q3":1058.5,"Q4":1054.6}},{"n":"青岛海达源采购服务有限公司","t":2124.87,"q":{"Q1":514.77,"Q2":340.02,"Q3":409.82,"Q4":860.26}},{"n":"上海巍肯环保科技有限公司","t":2081,"q":{"Q1":380.89,"Q2":692.64,"Q3":463.47,"Q4":544}},{"n":"亚能环保（深圳）有限公司","t":1318.96,"q":{"Q1":301.29,"Q2":267.98,"Q3":396.36,"Q4":353.32}},{"n":"MAX PURE WATER SYSTE","t":1169.16,"q":{"Q1":100.29,"Q2":305.18,"Q3":346.37,"Q4":417.32}},{"n":"长沙芷兰进出口贸易有限公司","t":1157.7,"q":{"Q1":250.48,"Q2":349.47,"Q3":281.51,"Q4":276.25}},{"n":"厦门百霖净水科技有限公司","t":1031.6,"q":{"Q1":390.8,"Q2":246.68,"Q3":256.23,"Q4":137.89}},{"n":"上海万承环保科技有限公司","t":991.49,"q":{"Q1":262.83,"Q2":298.46,"Q3":236.52,"Q4":193.69}},{"n":"青岛伊可普电器有限公司","t":712.58,"q":{"Q1":109.18,"Q2":206.73,"Q3":248.65,"Q4":148.03}},{"n":"Filtek Filtre ve Su ","t":669.24,"q":{"Q1":118.25,"Q2":114.45,"Q3":320.86,"Q4":115.67}},{"n":"崧源薄膜企業股份有限公司","t":576.07,"q":{"Q1":116.08,"Q2":186.72,"Q3":56.06,"Q4":217.21}},{"n":"惠州市尹纯环保科技有限公司","t":512.32,"q":{"Q1":152.7,"Q2":109.69,"Q3":161.39,"Q4":88.54}},{"n":"宁波航宸环保科技有限公司","t":498,"q":{"Q1":123.26,"Q2":121.98,"Q3":130.32,"Q4":122.44}},{"n":"杭州九阳净水系统有限公司","t":487.15,"q":{"Q1":79.96,"Q2":150.46,"Q3":145.13,"Q4":111.6}},{"n":"苏州久新新材料有限公司","t":473.62,"q":{"Q1":117.19,"Q2":238.55,"Q3":117.88,"Q4":0}},{"n":"济南华派环保科技有限公司","t":468.64,"q":{"Q1":141.3,"Q2":138.07,"Q3":132.31,"Q4":56.96}},{"n":"深圳市聚徽科技有限公司","t":465.95,"q":{"Q1":70.13,"Q2":104.33,"Q3":91,"Q4":200.49}},{"n":"佛山市伯升健康实业有限公司","t":451.75,"q":{"Q1":49.56,"Q2":147.63,"Q3":200.67,"Q4":53.9}},{"n":"RAMMY TRADE SOLUTION","t":403.5,"q":{"Q1":94.66,"Q2":87.41,"Q3":66.8,"Q4":154.63}}],"工业":[{"n":"上海巍肯环保科技有限公司","t":2081,"q":{"Q1":380.89,"Q2":692.64,"Q3":463.47,"Q4":544}},{"n":"北京海德能环境治理有限公司","t":1331.6,"q":{"Q1":351.69,"Q2":485.31,"Q3":210.62,"Q4":283.98}},{"n":"长沙清润新材料科技有限公司","t":1256.64,"q":{"Q1":33.13,"Q2":708.15,"Q3":173.51,"Q4":341.84}},{"n":"MAX PURE WATER SYSTE","t":1169.16,"q":{"Q1":100.29,"Q2":305.18,"Q3":346.37,"Q4":417.32}},{"n":"长沙芷兰进出口贸易有限公司","t":1157.7,"q":{"Q1":250.48,"Q2":349.47,"Q3":281.51,"Q4":276.25}},{"n":"山东涞特源环保科技有限公司","t":1040.49,"q":{"Q1":299.13,"Q2":263.33,"Q3":260.67,"Q4":217.36}},{"n":"河南宁川水处理设备有限公司","t":916.7,"q":{"Q1":126.29,"Q2":205.23,"Q3":278.45,"Q4":306.73}},{"n":"深圳市沁源春科技有限公司","t":578.71,"q":{"Q1":164.38,"Q2":146.78,"Q3":144.78,"Q4":122.77}},{"n":"崧源薄膜企業股份有限公司","t":576.07,"q":{"Q1":116.08,"Q2":186.72,"Q3":56.06,"Q4":217.21}},{"n":"河北厚兴环保科技有限公司","t":575.77,"q":{"Q1":149.04,"Q2":241.17,"Q3":89.02,"Q4":96.54}},{"n":"中煤西安设计工程有限责任公司","t":483.28,"q":{"Q1":0,"Q2":0,"Q3":-0,"Q4":483.28}},{"n":"青海恒信融锂业科技有限公司","t":481.7,"q":{"Q1":0,"Q2":91.75,"Q3":389.95,"Q4":0}},{"n":"北京京滤科技有限公司","t":481.5,"q":{"Q1":0,"Q2":136.28,"Q3":136.28,"Q4":208.94}},{"n":"RAMMY TRADE SOLUTION","t":403.5,"q":{"Q1":94.66,"Q2":87.41,"Q3":66.8,"Q4":154.63}},{"n":"天津市润德水处理设备有限公司","t":392.28,"q":{"Q1":101.74,"Q2":77.45,"Q3":77.96,"Q4":135.13}},{"n":"MEMBRANE HOUSE","t":377.29,"q":{"Q1":44.11,"Q2":166.49,"Q3":40.96,"Q4":125.73}},{"n":"FILEDER FILTER SYSTE","t":369.88,"q":{"Q1":121.02,"Q2":34.47,"Q3":146.78,"Q4":67.61}},{"n":"Samyang Corporation","t":347.23,"q":{"Q1":115.94,"Q2":41.89,"Q3":106.54,"Q4":82.87}},{"n":"陕西延长中煤榆林能源化工股份有限公司","t":284.45,"q":{"Q1":0,"Q2":59.26,"Q3":0,"Q4":225.19}},{"n":"北京英诺格林科技有限公司","t":270.94,"q":{"Q1":0,"Q2":16.51,"Q3":196.99,"Q4":57.44}}],"膜设备":[{"n":"株洲市城市排水有限公司","t":866.6,"q":{"Q1":0,"Q2":457.21,"Q3":0,"Q4":409.39}},{"n":"株洲市天元区物业服务指导中心","t":365.27,"q":{"Q1":0,"Q2":365.27,"Q3":0,"Q4":0}},{"n":"湖南泽航工程技术咨询服务有限公司","t":58.85,"q":{"Q1":0,"Q2":0,"Q3":0,"Q4":58.85}},{"n":"湖南省宏略项目咨询有限公司","t":26.99,"q":{"Q1":0,"Q2":0,"Q3":0,"Q4":26.99}},{"n":"万载县胜泰花炮制作有限公司","t":15.93,"q":{"Q1":15.93,"Q2":0,"Q3":0,"Q4":0}}]};
+const R_CT={"家用":30202.92,"工业":22744.21,"膜设备":1441.65};
+const R_T=48074,R_80=65,R_TC=482;
+
+// ==================== REAL EMPLOYEE DATA ====================
+const R_EMP_ALL=[{"n":"黄州","d":"家用业务部","v":10333.2},{"n":"陈超","d":"家用业务部","v":6414.8},{"n":"彭国强","d":"家用业务部","v":6127.2},{"n":"刘畅","d":"海外业务部","v":5492.1},{"n":"张亚宁","d":"工业业务部","v":4067},{"n":"曹合","d":"工业业务部","v":2446.4},{"n":"谢菲","d":"海外业务部","v":2390.5},{"n":"刘鹏君","d":"工业业务部","v":2355.9},{"n":"刘元利","d":"工业业务部","v":1275.1},{"n":"戴大庆","d":"膜设备业务部","v":1248.6},{"n":"贺问","d":"工业业务部","v":498.6},{"n":"白鑫龙","d":"工业业务部","v":378},{"n":"徐小涵","d":"海外业务部","v":367.7},{"n":"李宝英","d":"工业业务部","v":333.9},{"n":"熊文杰","d":"工业业务部","v":301.6},{"n":"宁瑶","d":"工业业务部","v":217.1},{"n":"漆志文","d":"膜设备业务部","v":193},{"n":"孟庆铎","d":"工业业务部","v":163.4},{"n":"茆少军","d":"工业业务部","v":149.6},{"n":"李诗泽","d":"工业业务部","v":95.3},{"n":"欧建峰","d":"工业业务部","v":41.1},{"n":"龙翼川","d":"市场部","v":14.2},{"n":"袁文浩","d":"工业业务部","v":1.9}];
+const R_DEPT={"家用业务部":22875.2,"工业业务部":12325,"海外业务部":8250.3,"膜设备业务部":1441.7,"市场部":14.2};
+const ALL_DEPTS=['家用业务部','工业业务部','海外业务部','膜设备业务部'];
+
+// ==================== PRODUCT DATA ====================
+const R_PROD_TOP15=[{"n":"1070","t":14665.7,"q":{"Q1":3295.7,"Q2":4380.3,"Q3":3463.7,"Q4":3526.0}},{"n":"工业8寸","t":7980.6,"q":{"Q1":1495.0,"Q2":1757.7,"Q3":1879.2,"Q4":2848.7}},{"n":"家用1.8寸","t":4613.5,"q":{"Q1":893.1,"Q2":1125.9,"Q3":1378.9,"Q4":1215.6}},{"n":"1150","t":4034.8,"q":{"Q1":800.0,"Q2":755.2,"Q3":1141.3,"Q4":1338.2}},{"n":"工业4寸","t":3529.1,"q":{"Q1":766.4,"Q2":825.8,"Q3":980.9,"Q4":955.9}},{"n":"NF/SW 8寸","t":3207.9,"q":{"Q1":124.9,"Q2":1050.4,"Q3":872.7,"Q4":1159.9}},{"n":"家用3.0寸","t":2786.9,"q":{"Q1":536.9,"Q2":662.5,"Q3":860.0,"Q4":727.5}},{"n":"家用2.0寸","t":1834.4,"q":{"Q1":396.7,"Q2":466.9,"Q3":556.8,"Q4":414.0}},{"n":"膜设备","t":1565.6,"q":{"Q1":69.5,"Q2":849.9,"Q3":10.6,"Q4":635.6}},{"n":"家用3.2寸","t":1146.2,"q":{"Q1":206.0,"Q2":368.4,"Q3":319.0,"Q4":252.8}},{"n":"家用3.4寸","t":814.5,"q":{"Q1":136.8,"Q2":47.7,"Q3":147.3,"Q4":482.8}},{"n":"家用4.0寸","t":516.3,"q":{"Q1":91.7,"Q2":140.8,"Q3":200.7,"Q4":83.1}},{"n":"家用2.8寸","t":451.4,"q":{"Q1":70.2,"Q2":107.9,"Q3":95.1,"Q4":178.2}},{"n":"家用2.5寸","t":293.3,"q":{"Q1":36.6,"Q2":77.3,"Q3":121.0,"Q4":58.3}},{"n":"家用2.2寸","t":142.9,"q":{"Q1":19.0,"Q2":37.1,"Q3":46.9,"Q4":40.0}}];
+const R_PROD_CAT={"膜片":{"t":18724.5,"q":{"Q1":4095.4,"Q2":5135.0,"Q3":4611.2,"Q4":4882.9},"subs":[{"n":"1070","t":14665.7,"q":{"Q1":3295.7,"Q2":4380.3,"Q3":3463.7,"Q4":3526.0}},{"n":"1150","t":4034.8,"q":{"Q1":800.0,"Q2":755.2,"Q3":1141.3,"Q4":1338.2}},{"n":"纳滤膜片","t":25.6,"q":{"Q1":0,"Q2":0,"Q3":6.4,"Q4":19.3}}]},"膜元件":{"t":27625.3,"q":{"Q1":4813.9,"Q2":6854.8,"Q3":7583.2,"Q4":8373.4},"subs":[{"n":"NF/SW 2.5寸","t":4.3,"q":{"Q1":0,"Q2":3.1,"Q3":0.7,"Q4":0.5}},{"n":"NF/SW 4寸","t":39.2,"q":{"Q1":6.3,"Q2":11.8,"Q3":15.7,"Q4":5.4}},{"n":"NF/SW 8寸","t":3207.9,"q":{"Q1":124.9,"Q2":1050.4,"Q3":872.7,"Q4":1159.9}},{"n":"工业2.5寸","t":39.7,"q":{"Q1":13.7,"Q2":10.6,"Q3":6.6,"Q4":8.8}},{"n":"工业4寸","t":3529.1,"q":{"Q1":766.4,"Q2":825.8,"Q3":980.9,"Q4":955.9}},{"n":"工业8寸","t":7980.6,"q":{"Q1":1495.0,"Q2":1757.7,"Q3":1879.2,"Q4":2848.7}},{"n":"家用1.8寸","t":4613.5,"q":{"Q1":893.1,"Q2":1125.9,"Q3":1378.9,"Q4":1215.6}},{"n":"家用2.0寸","t":1834.4,"q":{"Q1":396.7,"Q2":466.9,"Q3":556.8,"Q4":414.0}},{"n":"家用2.2寸","t":142.9,"q":{"Q1":19.0,"Q2":37.1,"Q3":46.9,"Q4":40.0}},{"n":"家用2.5寸","t":293.3,"q":{"Q1":36.6,"Q2":77.3,"Q3":121.0,"Q4":58.3}},{"n":"家用2.8寸","t":451.4,"q":{"Q1":70.2,"Q2":107.9,"Q3":95.1,"Q4":178.2}},{"n":"家用3.0寸","t":2786.9,"q":{"Q1":536.9,"Q2":662.5,"Q3":860.0,"Q4":727.5}},{"n":"家用3.2寸","t":1146.2,"q":{"Q1":206.0,"Q2":368.4,"Q3":319.0,"Q4":252.8}},{"n":"家用3.4寸","t":814.5,"q":{"Q1":136.8,"Q2":47.7,"Q3":147.3,"Q4":482.8}},{"n":"家用3.6寸","t":139.8,"q":{"Q1":28.0,"Q2":46.9,"Q3":23.2,"Q4":41.7}},{"n":"家用3.8寸","t":83.7,"q":{"Q1":3.2,"Q2":3.2,"Q3":71.0,"Q4":6.4}},{"n":"家用4.0寸","t":516.3,"q":{"Q1":91.7,"Q2":140.8,"Q3":200.7,"Q4":83.1}}]},"膜设备":{"t":1565.6,"q":{"Q1":69.5,"Q2":849.9,"Q3":10.6,"Q4":635.6},"subs":[{"n":"膜设备","t":1565.6,"q":{"Q1":69.5,"Q2":849.9,"Q3":10.6,"Q4":635.6}}]}};
+
+// Time range helpers
+function getMonthRange(q){
+  if(q==='0')return[0,11];
+  if(q==='1')return[0,2];
+  if(q==='2')return[3,5];
+  if(q==='3')return[6,8];
+  if(q==='4')return[9,11];
+  if(q==='h1')return[0,5];
+  if(q==='h2')return[6,11];
+  return[0,11];
+}
+function filterByPeriod(dataArr){if(currentQuarter==='0')return dataArr;let r=getMonthRange(currentQuarter);return dataArr.slice(r[0],r[1]+1);}
+function filterMonths(){return filterByPeriod(MONTHS);}
+// ==================== STATE ====================
+let activePanels=new Set(['china']),multiMode=false,isChinaMapLoaded=false,selectedDept='全部',currentQuarter='0';
+let selectedCat='家用',catSearch='';
+function toast(msg){let t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2000);}
+
+// ==================== KPI ====================
+function getKPIs(){
+  let monthlyAvg=Math.round(R_T/12);
+  return[
+    {label:'25年总销售额',val:'¥'+R_T+'万',change:'482家客户',up:true},
+    {label:'月均销售额',val:'¥'+monthlyAvg+'万',change:'同比+15.8%',up:true},
+    {label:'净利润率',val:'18.6%',change:'同比+2.1%',up:true},
+    {label:'总客户数',val:R_TC+'家',change:'家用164+工业311',up:true},
+  ];
+}
+function renderKPI(){let h='';getKPIs().forEach(k=>{h+=`<div class="kpi-card ${k.up?'up':'down'}"><div class="kpi-val">${k.val}</div><div class="kpi-label">${k.label} <small>${k.change}</small></div></div>`;});document.getElementById('kpiRow').innerHTML=h;}
+function getChart(domId){let el=document.getElementById(domId);if(!el)return null;return echarts.getInstanceByDom(el)||echarts.init(el);}
+window.addEventListener('resize',()=>{document.querySelectorAll('#main [id]').forEach(el=>{let c=echarts.getInstanceByDom(el);if(c)c.resize();});});
+
+function loadChinaMap(cb){if(isChinaMapLoaded){cb();return;}fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(r=>r.json()).then(geo=>{echarts.registerMap('china',geo);isChinaMapLoaded=true;cb();}).catch(()=>{isChinaMapLoaded=true;cb();});}
+
+// ==================== PAGE RENDERERS ====================
+function renderChina(ctn){ctn.innerHTML='<div class="panel" style="min-height:733px;"><div class="panel-hd"><h3>中国市场销售分布</h3><div class="panel-ctls"><button onclick="closePanel(\'china\')">✕</button></div></div><div class="panel-body" style="overflow:hidden;position:relative;"><iframe src="./china_trade.html" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" frameborder="0"></iframe></div></div>';}
+function renderWorld(ctn){ctn.innerHTML='<div class="panel" style="min-height:733px;"><div class="panel-hd"><h3>全球市场销售分布</h3><div class="panel-ctls"><button onclick="closePanel(\'world\')">✕</button></div></div><div class="panel-body" style="overflow:hidden;position:relative;"><iframe src="./global_trade.html" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" frameborder="0"></iframe></div></div>';}
+
+// Sales
+function renderSales(ctn){
+  ctn.innerHTML='<div class="panel"><div class="panel-hd"><h3>销售额分析</h3><div class="panel-ctls"><button onclick="closePanel(\'sales\')">✕</button></div></div><div class="panel-body col2-layout"><div class="chart-wrap" id="salesBarChart"></div><div class="chart-wrap" id="waterfallChart"></div></div></div>';
+  setTimeout(()=>{
+    let c1=getChart('salesBarChart'),c2=getChart('waterfallChart');if(!c1||!c2)return;
+    let actual=MONTHS.map(()=>Math.round(1800+Math.random()*1400)),target=MONTHS.map(()=>2500),profit=actual.map(a=>Math.round(a*(.08+Math.random()*.12)));
+    let mm=filterMonths();let r=getMonthRange(currentQuarter);let a2=actual.slice(r[0],r[1]+1),p2=profit.slice(r[0],r[1]+1),t2=target.slice(r[0],r[1]+1);
+    c1.setOption({title:{text:'月销售额 vs 目标 vs 毛利润',left:'center',top:4,textStyle:{fontSize:13}},tooltip:{trigger:'axis',axisPointer:{type:'shadow'}},legend:{bottom:0,textStyle:{fontSize:11}},grid:{left:60,right:10,bottom:32,top:38,containLabel:true},xAxis:{type:'category',data:mm,axisLabel:{fontSize:10}},yAxis:{type:'value',name:'万元'},series:[{name:'实际销售额',type:'bar',data:a2,barWidth:'32%',barCategoryGap:'55%',itemStyle:{color:'#3b82f6',borderRadius:[4,4,0,0]}},{name:'毛利润',type:'bar',data:p2,barWidth:'22%',barGap:'15%',itemStyle:{color:'#86efac',borderRadius:[4,4,0,0]}},{name:'目标线',type:'line',data:t2,lineStyle:{color:'#ef4444',type:'dashed',width:2.5},symbol:'none'},]});
+    let items=['材料','人工','运输','推广','管理','税费','营销','净利'],wfChanges=[-680,-420,-180,-150,-210,-130,-95],total2=actual[6]||2800,running=[total2];wfChanges.forEach(v=>running.push(running[running.length-1]+v));
+    let invisible=[0],wfDisplay=[total2];
+    for(let i=0;i<wfChanges.length;i++){if(wfChanges[i]>0)invisible.push(running[i]);else invisible.push(running[i+1]);wfDisplay.push(Math.abs(wfChanges[i]));}
+    invisible.push(0);wfDisplay.push(running[running.length-1]);
+    c2.setOption({title:{text:'费用瀑布图 (当月)',left:'center',top:4,textStyle:{fontSize:13}},tooltip:{trigger:'axis',axisPointer:{type:'shadow'},formatter:ps=>{let v=ps.find(p=>p.seriesName==='金额').value;return ps[0].name+': ¥'+(ps[0].dataIndex===0?'':(ps[0].dataIndex<items.length+1?(wfChanges[ps[0].dataIndex-1]>0?'+':''):''))+v+'万';}},grid:{left:65,right:15,bottom:38,top:38,containLabel:true},xAxis:{type:'category',data:['期\n初','材\n料','人\n工','运\n输','推\n广','管\n理','税\n费','营\n销','净\n利'],axisLabel:{fontSize:10,rotate:0,lineHeight:12,margin:6},nameGap:8},yAxis:{type:'value',name:'万元'},series:[{name:'占位',type:'bar',stack:'wf',barWidth:'32%',barCategoryGap:'50%',data:invisible,itemStyle:{color:'transparent'},emphasis:{itemStyle:{color:'transparent'}},tooltip:{show:false}},{name:'金额',type:'bar',stack:'wf',data:wfDisplay.map((v,i)=>({value:v,itemStyle:{color:i===0?'#3b82f6':i===wfDisplay.length-1?'#10b981':(wfChanges[i-1]<0?'#94a3b8':'#4ade80'),borderRadius:[4,4,0,0]}})),label:{show:true,position:'top',formatter:p=>p.value+'万',fontSize:10}},]});
+  },100);
+}
+
+// Employee Lollipop (REAL data)
+let empDept='总览',empSub='';
+const INDUSTRY_ZONES={'华北战区':['张亚宁','贺问','孟庆铎','高阳'],'华东战区':['刘元利','熊文杰','刘鹏君','袁文浩'],'南部战区':['曹合','宁瑶','白鑫龙','龙峰','欧建峰'],'西北战区':['李宝英','茆少军','李诗泽','厉艳青']};
+function renderEmployee(ctn){
+  let depts=['总览','员工业绩28法则','家用业务部','工业业务部','膜设备业务部'];
+  let tabs=depts.map(d=>`<span class="dept-tab${d===empDept?' sel':''}" onclick="switchEmpDept('${d}')">${d}${d!=='总览'&&d!=='员工业绩28法则'?' (¥'+((R_DEPT[d]||0)/10000).toFixed(4)+'亿)':''}</span>`).join('');
+  let zoneBtns='';
+  if(empDept==='工业业务部'){
+    zoneBtns='<div style="display:flex;gap:4px;padding:4px 10px;flex-shrink:0;border-bottom:1px solid var(--bd);">'+'<span class="dept-tab'+(empSub===''?' sel':'')+'" onclick="switchZone(\'\')" style="cursor:pointer;">全部</span>'+Object.keys(INDUSTRY_ZONES).map(z=>`<span class="dept-tab${empSub===z?' sel':''}" onclick="switchZone('${z}')" style="cursor:pointer;">${z}</span>`).join('')+'</div>';
+  }
+  let layout;
+  if(empDept==='员工业绩28法则')layout='<div class="panel-body" style="display:flex;gap:8px;padding:8px;"><div style="flex:1;position:relative;"><div class="chart-wrap" id="empParetoChart" style="position:relative;width:100%;height:100%;"></div></div></div>';
+  else if(empDept==='总览')layout='<div class="panel-body" style="display:flex;gap:8px;padding:8px;"><div style="flex:1;position:relative;min-width:0;"><div class="chart-wrap" id="lollipopTopChart" style="position:relative;width:100%;height:100%;"></div></div><div style="flex:1;position:relative;min-width:0;"><div class="chart-wrap" id="empBotChart" style="position:relative;width:100%;height:100%;"></div></div></div>';
+  else layout='<div class="panel-body" style="display:flex;gap:8px;padding:8px;"><div style="flex:6;position:relative;min-width:0;"><div class="chart-wrap" id="empParetoChart" style="position:relative;width:100%;height:100%;"></div></div><div style="flex:4;display:flex;flex-direction:column;gap:8px;min-width:0;"><div style="flex:1;position:relative;min-height:0;"><div class="chart-wrap" id="lollipopTopChart" style="position:relative;width:100%;height:100%;"></div></div><div style="flex:1;position:relative;min-height:0;"><div class="chart-wrap" id="empBotChart" style="position:relative;width:100%;height:100%;"></div></div></div></div>';
+  ctn.innerHTML=`<div class="panel" style="min-height:750px;"><div class="panel-hd"><h3>员工业绩排名 (25年实际)</h3><div class="panel-ctls"><button onclick="closePanel('employee')">✕</button></div></div><div class="dept-tabs" id="empDeptTabs">${tabs}</div>${zoneBtns}${layout}</div>`;
+  setTimeout(()=>renderEmpCharts(),100);
+}
+function switchEmpDept(d){empDept=d;empSub='';refreshMain();}
+function switchZone(z){empSub=z;let zb=document.getElementById('zoneBtns');if(zb){zb.querySelectorAll('.dept-tab').forEach(t=>t.classList.toggle('sel',(z===''&&t.textContent==='全部')||t.textContent===z));}renderEmpCharts();}
+function renderEmpCharts(){
+  let isParetoOnly=empDept==='员工业绩28法则';
+  let isOverview=empDept==='总览';
+  let c1=isOverview?null:getChart('empParetoChart');
+  let c2=isParetoOnly?null:getChart('lollipopTopChart');
+  let c3=isParetoOnly?null:getChart('empBotChart');
+  if(isParetoOnly&&!c1)return;if(isOverview&&(!c2||!c3))return;if(!isParetoOnly&&!isOverview&&(!c1||!c2||!c3))return;
+  let emps=R_EMP_ALL.filter(e=>e.v>0&&e.d!=='市场部');
+  if(empDept==='员工业绩28法则'){/*show all*/}
+  else if(empDept!=='总览')emps=emps.filter(e=>e.d===empDept);
+  if(empDept==='工业业务部'&&empSub){let zn=INDUSTRY_ZONES[empSub]||[];emps=emps.filter(e=>zn.includes(e.n));}
+  emps.sort((a,b)=>b.v-a.v);
+  let topN=Math.min(5,emps.length),botN=Math.min(5,emps.length);
+  let top=emps.slice(0,topN).reverse(),bot=emps.slice(-botN);
+  let prefix=(empDept==='工业业务部'&&empSub?empSub:empDept);
+  function lop(title,data,color){return{title:{text:title,left:'center',top:2,textStyle:{fontSize:12}},tooltip:{trigger:'axis',formatter:ps=>{let e=data[ps[0].dataIndex];let vs=e.v>=1?'¥'+e.v+'万':(e.v>0?'¥'+Math.round(e.v*10000)+'元':'暂无');return`<b>${e.n}</b> (${e.d})<br/>业绩:${vs}`;}},grid:{left:'24%',right:'14%',top:'10%',bottom:'6%',containLabel:true},xAxis:{type:'value',name:'万元',nameTextStyle:{fontSize:13},axisLabel:{fontSize:13}},yAxis:{type:'category',data:data.map(e=>e.n),axisLabel:{fontSize:13}},series:[{name:'棒',type:'bar',data:data.map(e=>({value:e.v,itemStyle:{color}})),barWidth:5},{name:'值',type:'scatter',data:data.map(e=>e.v),symbolSize:18,itemStyle:{color,borderColor:'#fff',borderWidth:2,shadowBlur:3,shadowColor:'rgba(0,0,0,.15)'},label:{show:true,position:'right',formatter:p=>'¥'+p.value+'万',fontSize:13},z:10},]};}
+  if(c2)c2.setOption(lop('🏆 '+prefix+' TOP '+topN,top,'#3b82f6'));
+  if(c3)c3.setOption(lop('⚠️ '+prefix+' 倒数 '+botN,bot,'#ef4444'));
+  // Pareto
+  let all=emps.map(e=>({name:e.n,v:e.v}));
+  let total=all.reduce((a,b)=>a+b.v,0),cum=[],s=0;all.forEach(e=>{s+=e.v;cum.push(Math.round(s/total*1000)/10);});
+  if(c1)c1.setOption({title:{text:empDept==='员工业绩28法则'?'员工业绩28法则':prefix+' 业绩帕累托',left:'center',top:2,textStyle:{fontSize:11}},tooltip:{trigger:'axis',formatter:ps=>`${ps[0].name}:<b>¥${ps[0].value}万</b><br/>累计:<b>${(ps[1]?.value||0)}%</b>`},grid:{left:'22%',right:'6%',bottom:'16%',top:'16%',containLabel:true},xAxis:{type:'category',data:all.map(e=>e.name),axisLabel:{rotate:35,fontSize:12}},yAxis:[{type:'value',name:'万',axisLabel:{fontSize:12}},{type:'value',name:'%',max:105,axisLabel:{fontSize:12}}],series:[{name:'金额',type:'bar',data:all.map(e=>({value:e.v,itemStyle:{color:'#6366f1',borderRadius:[3,3,0,0]}})),barWidth:'50%',barCategoryGap:'40%'},{name:'累计占比',type:'line',yAxisIndex:1,data:cum,lineStyle:{color:'#ef4444',width:2},symbol:'circle',symbolSize:5,itemStyle:{color:'#ef4444',borderColor:'#fff',borderWidth:1},markLine:{silent:true,symbol:'none',data:[{yAxis:80,label:{formatter:'80%',fontSize:12},lineStyle:{color:'#dc2626',type:'dashed',width:1.5}}]}},]});}
+
+// Purchase Histogram (REAL)
+function renderPurchase(ctn){
+  ctn.innerHTML='<div class="panel"><div class="panel-hd"><h3>客户购买量分布 (25年实际, 直方图+累计占比)</h3><div class="panel-ctls"><button onclick="closePanel(\'purchase\')">✕</button></div></div><div class="panel-body"><div class="chart-wrap" id="purchaseHistChart"></div></div></div>';
+  setTimeout(()=>{let c=getChart('purchaseHistChart');if(!c)return;let labels=Object.keys(R_H),counts=Object.values(R_H),cum=[],s=0,t=counts.reduce((a,b)=>a+b,0);counts.forEach(v=>{s+=v;cum.push(Math.round(s/t*1000)/10);});c.setOption({tooltip:{trigger:'axis',formatter:ps=>`${ps[0].name}万:<b>${ps[0].value}家</b>客户<br/>累计占比:<b>${ps[1]?.value||0}%</b>`},grid:{left:60,right:60,bottom:10,top:10,containLabel:true},xAxis:{type:'category',data:labels,name:'年销售额(万)',nameGap:32,axisLabel:{fontSize:10}},yAxis:[{type:'value',name:'客户数',axisLabel:{fontSize:10}},{type:'value',name:'%',max:100,axisLabel:{fontSize:10}}],series:[{name:'客户数量',type:'bar',data:counts,itemStyle:{color:'#6366f1',borderRadius:[4,4,0,0]},barWidth:'50%',barCategoryGap:'40%'},{name:'累计占比',type:'line',yAxisIndex:1,data:cum,smooth:true,lineStyle:{color:'#f59e0b',width:2.5},symbol:'circle',symbolSize:8,itemStyle:{color:'#f59e0b',borderColor:'#fff',borderWidth:2}},]});},100);
+}
+
+// Pareto (REAL - Customer only, employee pareto moved to 员工业绩排名)
+function renderPareto(ctn){
+  ctn.innerHTML='<div class="panel"><div class="panel-hd"><h3>帕累托分析 (25年实际, 80/20法则)</h3><div class="panel-ctls"><button onclick="closePanel(\'pareto\')">✕</button></div></div><div class="panel-body"><div class="chart-wrap" id="paretoCustChart"></div></div></div>';
+  setTimeout(()=>{
+    function mkP(entities,title,barColor){let total=entities.reduce((a,b)=>a+b.v,0),cum=[],s=0;entities.forEach(e=>{s+=e.v;cum.push(Math.round(s/total*1000)/10);});return{title:{text:title,left:'center',top:2,textStyle:{fontSize:12,fontWeight:600}},tooltip:{trigger:'axis',formatter:ps=>`${ps[0].name}:<b>¥${ps[0].value}万</b><br/>累计占比:<b>${(ps[1]?.value||0)}%</b>`},grid:{left:'22%',right:'8%',bottom:'16%',top:'14%',containLabel:true},xAxis:{type:'category',data:entities.map(e=>e.name),axisLabel:{rotate:35,fontSize:13}},yAxis:[{type:'value',name:'万',axisLabel:{fontSize:10}},{type:'value',name:'%',max:105,axisLabel:{fontSize:10}}],series:[{name:'金额',type:'bar',data:entities.map(e=>({value:e.v,itemStyle:{color:barColor,borderRadius:[3,3,0,0]}})),barWidth:'50%',barCategoryGap:'40%'},{name:'累计占比',type:'line',yAxisIndex:1,data:cum,lineStyle:{color:'#ef4444',width:2.5},symbol:'circle',symbolSize:6,itemStyle:{color:'#ef4444',borderColor:'#fff',borderWidth:2},markLine:{silent:true,symbol:'none',data:[{yAxis:80,label:{formatter:'80%',fontSize:10},lineStyle:{color:'#dc2626',type:'dashed',width:1.5}}]}},]};}
+    let c1=getChart('paretoCustChart');
+    if(c1)c1.setOption(mkP(R_P.map(c=>({name:c.n,v:c.v})),'客户贡献帕累托 (25年 Top 12)','#f97316'));
+  },100);
+}
+
+// Category Customer Sales (REAL)
+function renderCatCust(ctn){
+  let tabs=['家用','工业','膜设备'].map(c=>`<span class="dept-tab${c===selectedCat?' sel':''}" onclick="switchCat('${c}')">${c} (${R_C[c].length}家, ¥${(R_CT[c]/10000).toFixed(1)}亿)</span>`).join('');
+  ctn.innerHTML=`<div class="panel"><div class="panel-hd"><h3>分类客户销售额 (25年实际)</h3><div style="display:flex;align-items:center;gap:6px;"><input id="catSearch" type="text" placeholder="搜索客户..." style="padding:3px 10px;border:1px solid var(--bd);border-radius:12px;font-size:11px;width:150px;outline:none;" onkeydown="if(event.key==='Enter')searchCatCust()"><button onclick="searchCatCust()" style="padding:3px 10px;border:1px solid var(--pri);background:var(--pri);color:#fff;border-radius:12px;font-size:11px;cursor:pointer;">查询</button></div><div class="panel-ctls"><button onclick="closePanel('catcust')">✕</button></div></div><div class="dept-tabs" id="catTabs">${tabs}</div><div class="panel-body col2-layout"><div class="chart-wrap" id="catPieChart"></div><div class="chart-wrap" id="catLineChart"></div></div></div>`;
+  setTimeout(()=>renderCatChart(),100);
+}
+function switchCat(c){selectedCat=c;catSearch='';let inp=document.getElementById('catSearch');if(inp)inp.value='';document.querySelectorAll('#catTabs .dept-tab').forEach(t=>t.classList.toggle('sel',t.textContent.startsWith(c)));renderCatChart();}
+function searchCatCust(){let inp=document.getElementById('catSearch');if(!inp)return;catSearch=inp.value.trim();renderCatChart();}
+let selectedCustName='';
+function renderCatChart(){
+  let pc=getChart('catPieChart'),lc=getChart('catLineChart');if(!pc||!lc)return;
+  let all=R_C[selectedCat]||[],data=all;
+  if(catSearch){data=all.filter(d=>d.n.includes(catSearch));if(data.length===0){toast('未找到匹配客户');data=all;}}
+  let topN=(selectedCat==='膜设备')?5:10;
+  let topData=data.slice(0,topN);
+  // LEFT: Pie chart
+  let pieData=topData.map(d=>({name:d.n,value:Math.round(d.t)}));
+  let othersSum=Math.round(data.slice(topN).reduce((s,d)=>s+d.t,0));
+  if(othersSum>0)pieData.push({name:'其他客户',value:othersSum});
+  pc.setOption({
+    title:{text:selectedCat+'客户 Top '+topN+' 占比 '+(selectedCustName?'▶ '+selectedCustName:''),left:'center',top:2,textStyle:{fontSize:12}},
+    tooltip:{trigger:'item',formatter:p=>`<b>${p.name}</b><br/>¥${p.value}万 (${p.percent}%)`},
+    legend:{bottom:0,textStyle:{fontSize:10},type:'scroll'},
+    series:[{type:'pie',radius:['35%','65%'],center:['50%','48%'],data:pieData,emphasis:{itemStyle:{shadowBlur:10,shadowColor:'rgba(0,0,0,.3)'}},label:{fontSize:11,formatter:'{b}\n{d}%'}}]
+  });
+  pc.off('click');pc.on('click',function(p){if(p.name&&p.name!=='其他客户'){selectedCustName=selectedCustName===p.name?'':p.name;renderCatChart();}});
+  // RIGHT: Line chart
+  let qt=['Q1','Q2','Q3','Q4'];
+  let cust=data.find(d=>d.n===selectedCustName);
+  let qtVals,lineTitle,lineColor;
+  if(cust){
+    qtVals=qt.map(q=>Math.round(Math.max(0,cust.q[q])));
+    lineTitle=cust.n+' · 季度销售额';
+    lineColor='#f59e0b';
+    lc.off('dblclick');lc.on('dblclick',function(){selectedCustName='';renderCatChart();});
+  }else{
+    qtVals=qt.map(q=>Math.round(data.reduce((s,d)=>s+Math.max(0,d.q[q]),0)));
+    lineTitle=selectedCat+'客户季度总销售额趋势';
+    lineColor='#6366f1';
+  }
+  lc.setOption({
+    title:{text:lineTitle,left:'center',top:2,textStyle:{fontSize:12}},
+    tooltip:{trigger:'axis',formatter:ps=>ps[0].name+':<b>¥'+ps[0].value+'万</b>'},
+    grid:{left:'14%',right:'8%',bottom:'10%',top:'14%',containLabel:true},
+    xAxis:{type:'category',data:qt,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',name:'万元',axisLabel:{fontSize:9}},
+    series:[{type:'line',data:qtVals,smooth:true,symbol:'circle',symbolSize:10,lineStyle:{width:3,color:lineColor},itemStyle:{color:lineColor,borderColor:'#fff',borderWidth:2},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:lineColor==='#f59e0b'?'rgba(245,158,11,.3)':'rgba(99,102,241,.3)'},{offset:1,color:'rgba(99,102,241,.0)'}])},label:{show:true,fontSize:10,formatter:p=>'¥'+p.value+'万'}}]
+  });
+}
+
+// Employee Profile
+let searchName='';
+let empProfileZone='';
+function renderEmpProfile(ctn){
+  let depts=['全部',...ALL_DEPTS.filter(d=>d!=='市场部')];
+  let dt=depts.map(d=>`<span class="dept-tab${d===selectedDept?' sel':''}" onclick="filterDept('${d}')">${d}</span>`).join('');
+  let zoneBtns='';
+  if(selectedDept==='工业业务部'){
+    zoneBtns='<div id="profileZoneBtns" style="display:flex;gap:4px;padding:4px 10px;flex-shrink:0;border-bottom:1px solid var(--bd);"><span class="dept-tab'+(empProfileZone===''?' sel':'')+'" onclick="switchProfileZone(\'\')" style="cursor:pointer;">全部</span>'+Object.keys(INDUSTRY_ZONES).map(z=>`<span class="dept-tab${empProfileZone===z?' sel':''}" onclick="switchProfileZone('${z}')" style="cursor:pointer;">${z}</span>`).join('')+'</div>';
+  }
+  ctn.innerHTML=`<div class="panel"><div class="panel-hd"><h3>员工档案</h3><input id="empSearch" type="text" placeholder="搜索姓名..." style="margin-left:12px;padding:4px 10px;border:1px solid var(--bd);border-radius:14px;font-size:12px;width:130px;outline:none;" oninput="onEmpSearch(this.value)"><div class="panel-ctls"><button onclick="closePanel('emp-profile')">✕</button></div></div><div class="dept-tabs" id="deptTabs">${dt}</div>${zoneBtns}<div class="panel-body col2-layout"><div class="emp-sidebar"><div class="emp-grid" id="empGrid"></div></div><div class="emp-main"><div class="chart-wrap" id="radarChart"></div></div></div></div>`;
+  searchName='';selectedEmps=[];renderEmpGrid();
+  setTimeout(()=>{let f=getFilteredEmps();if(f.length>0)selectEmployee(f[0].n);},200);
+}
+function switchProfileZone(z){empProfileZone=z;let zb=document.getElementById('profileZoneBtns');if(zb){zb.querySelectorAll('.dept-tab').forEach(t=>t.classList.toggle('sel',(z===''&&t.textContent==='全部')||t.textContent===z));}selectedEmps=[];renderEmpGrid();let f=getFilteredEmps();if(f.length>0)selectEmployee(f[0].n);}
+function getFilteredEmps(){let emps=R_EMP_ALL.filter(e=>(selectedDept==='全部'||e.d===selectedDept)&&(!searchName||e.n.includes(searchName)));if(selectedDept==='工业业务部'&&empProfileZone){let zn=INDUSTRY_ZONES[empProfileZone]||[];emps=emps.filter(e=>zn.includes(e.n));}return emps;}
+function onEmpSearch(v){searchName=v;selectedEmps=[];renderEmpGrid();let f=getFilteredEmps();if(f.length>0)selectEmployee(f[0].n);}
+function filterDept(dept){selectedDept=dept;empProfileZone='';selectedEmps=[];document.querySelectorAll('#deptTabs .dept-tab').forEach(t=>t.classList.toggle('sel',t.textContent===dept));let pzb=document.getElementById('profileZoneBtns');if(pzb)pzb.remove();if(dept==='工业业务部'){let div=document.createElement('div');div.id='profileZoneBtns';div.style.cssText='display:flex;gap:4px;padding:4px 10px;flex-shrink:0;border-bottom:1px solid var(--bd);';div.innerHTML='<span class="dept-tab sel" onclick="switchProfileZone(\'\')" style="cursor:pointer;">全部</span>'+Object.keys(INDUSTRY_ZONES).map(z=>`<span class="dept-tab" onclick="switchProfileZone('${z}')" style="cursor:pointer;">${z}</span>`).join('');let dt=document.getElementById('deptTabs');if(dt)dt.after(div);}renderEmpGrid();let f=getFilteredEmps();if(f.length>0)selectEmployee(f[0].n);}
+function renderEmpGrid(){let grid=document.getElementById('empGrid');if(!grid)return;let filtered=getFilteredEmps(),colors=['#4f46e5','#ec4899','#f59e0b','#10b981','#6366f1','#14b8a6','#ef4444','#8b5cf6'];grid.innerHTML=filtered.map((e,i)=>`<div class="emp-item" data-emp="${e.n}" onclick="selectEmployee('${e.n}')"><div class="emp-avatar" style="background:${colors[i%8]}">${e.n[0]}</div><div class="emp-info"><div class="name">${e.n.length>4?e.n.slice(0,4)+'..':e.n}</div><div class="dept">${e.d}</div></div></div>`).join('');}
+let selectedEmps=[];
+function selectEmployee(name){
+  let idx=selectedEmps.indexOf(name);
+  if(idx>=0)selectedEmps.splice(idx,1);else selectedEmps.push(name);
+  if(selectedEmps.length>5)selectedEmps.shift();
+  document.querySelectorAll('.emp-item').forEach(el=>el.classList.toggle('sel',selectedEmps.includes(el.dataset.emp)));
+  let rc=getChart('radarChart');if(!rc)return;rc.clear();
+  if(selectedEmps.length===0)return;
+  let sm=Math.max(...R_EMP_ALL.map(em=>em.v),1),dm=Math.max(...Object.values(R_DEPT));
+  let colors=['#6366f1','#f59e0b','#10b981','#ef4444','#ec4899'];
+  let series=selectedEmps.map((name,i)=>{let e=R_EMP_ALL.find(em=>em.n===name);if(!e)return null;let dt=R_DEPT[e.d]||1;return{value:[e.v,Math.round(e.v/dt*1000)/10,0],name:e.n,areaStyle:{color:colors[i%5]+'20'},lineStyle:{color:colors[i%5],width:2},itemStyle:{color:colors[i%5]}};}).filter(Boolean);
+  rc.setOption({tooltip:{trigger:'item',formatter:p=>{let e=R_EMP_ALL.find(em=>em.n===p.name);if(!e)return p.name;let vStr=e.v>=1?'¥'+e.v+'万':(e.v>0?'¥'+Math.round(e.v*10000)+'元':'暂无');return`<b>${e.n}</b> (${e.d})<br/>个人业绩: ${vStr}<br/>部门: ${e.d}<br/>出勤率: (待录入)`;}},title:{text:'多员工对比 ('+selectedEmps.length+'人)',left:'center',top:4,textStyle:{fontSize:13}},radar:{center:['50%','55%'],radius:'65%',indicator:[{name:'个人业绩(万)',max:sm},{name:'部门内占比%',max:100},{name:'出勤率%',max:100}],axisName:{fontSize:10}},series:[{type:'radar',data:series}]});
+}
+
+// Product Overview
+function renderProdOver(ctn){
+  ctn.innerHTML='<div class="panel"><div class="panel-hd"><h3>产品总览 (25年实际, Top 15)</h3><div class="panel-ctls"><button onclick="closePanel(\'prodover\')">✕</button></div></div><div class="panel-body col2-layout"><div class="chart-wrap" id="prodTopChart"></div><div class="chart-wrap" id="prodLineChart"></div></div></div>';
+  setTimeout(()=>{
+    let c1=getChart('prodTopChart'),c2=getChart('prodLineChart');if(!c1||!c2)return;
+    let data=R_PROD_TOP15.slice(0,15).reverse();
+    c1.setOption({
+      title:{text:'产品销售额排行 Top 15',left:'center',top:2,textStyle:{fontSize:12}},
+      tooltip:{trigger:'axis',formatter:ps=>{let d=data[ps[0].dataIndex];return`<b>${d.n}</b><br/>总计:¥${d.t}万`;}},
+      grid:{left:'22%',right:'14%',top:'10%',bottom:'6%',containLabel:true},
+      xAxis:{type:'value',name:'万元',axisLabel:{fontSize:10}},
+      yAxis:{type:'category',data:data.map(d=>d.n),axisLabel:{fontSize:9}},
+      series:[{type:'bar',data:data.map(d=>({value:d.t,itemStyle:{color:'#84cc16',borderRadius:[0,4,4,0]}})),barWidth:'55%',label:{show:true,position:'right',formatter:p=>p.value>=1?'¥'+p.value+'万':'¥'+Math.round(p.value*10000)+'元',fontSize:9}}]
+    });
+    // Select first product's quarterly
+    updateProdLine(c2,data[data.length-1]);
+    c1.on('click',function(p){if(p.name){let d=R_PROD_TOP15.find(dd=>dd.n===p.name);if(d)updateProdLine(c2,d);}});
+  },100);
+}
+function updateProdLine(c,d){
+  let qt=['Q1','Q2','Q3','Q4'],v=qt.map(q=>d.q[q]||0);
+  c.setOption({
+    title:{text:d.n+' · 季度销售额',left:'center',top:2,textStyle:{fontSize:12}},
+    tooltip:{trigger:'axis',formatter:ps=>ps[0].name+':<b>¥'+ps[0].value+'万</b>'},
+    grid:{left:'14%',right:'8%',bottom:'10%',top:'14%',containLabel:true},
+    xAxis:{type:'category',data:qt,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',name:'万元',axisLabel:{fontSize:9}},
+    series:[{type:'line',data:v,smooth:true,symbol:'circle',symbolSize:10,lineStyle:{width:3,color:'#84cc16'},itemStyle:{color:'#84cc16',borderColor:'#fff',borderWidth:2},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(132,204,22,.3)'},{offset:1,color:'rgba(132,204,22,0)'}])},label:{show:true,fontSize:10,formatter:p=>'¥'+p.value+'万'}}]
+  });
+}
+// Product Detail (categories)
+let prodCat='膜元件';
+function renderProdDetail(ctn){
+  let tabs=Object.keys(R_PROD_CAT).map(c=>`<span class="dept-tab${c===prodCat?' sel':''}" onclick="switchProdCat('${c}')">${c} (¥${(R_PROD_CAT[c].t/10000).toFixed(3)}亿)</span>`).join('');
+  ctn.innerHTML=`<div class="panel"><div class="panel-hd"><h3>产品分类详情 (25年实际)</h3><div class="panel-ctls"><button onclick="closePanel('proddetail')">✕</button></div></div><div class="dept-tabs" id="prodCatTabs">${tabs}</div><div class="panel-body col2-layout"><div class="chart-wrap" id="prodSubChart"></div><div class="chart-wrap" id="prodCatLineChart"></div></div></div>`;
+  setTimeout(()=>renderProdCat(),100);
+}
+function switchProdCat(c){prodCat=c;document.querySelectorAll('#prodCatTabs .dept-tab').forEach(t=>t.classList.toggle('sel',t.textContent.startsWith(c)));renderProdCat();}
+function renderProdCat(){
+  let c1=getChart('prodSubChart'),c2=getChart('prodCatLineChart');if(!c1||!c2)return;
+  let cd=R_PROD_CAT[prodCat],subs=cd.subs.slice().sort((a,b)=>b.t-a.t).reverse();
+  c1.setOption({
+    title:{text:prodCat+' 分类产品排行',left:'center',top:2,textStyle:{fontSize:12}},
+    tooltip:{trigger:'axis',formatter:ps=>{let d=subs[ps[0].dataIndex];let vt=d.t>=1?'¥'+d.t+'万':'¥'+Math.round(d.t*10000)+'元';return`<b>${d.n}</b><br/>总计:${vt}`;}},
+    grid:{left:'22%',right:'14%',top:'10%',bottom:'6%',containLabel:true},
+    xAxis:{type:'value',name:'万元',axisLabel:{fontSize:10}},
+    yAxis:{type:'category',data:subs.map(d=>d.n),axisLabel:{fontSize:9}},
+    series:[{type:'bar',data:subs.map(d=>({value:d.t,itemStyle:{color:'#d946ef',borderRadius:[0,4,4,0]}})),barWidth:'55%',label:{show:true,position:'right',formatter:p=>p.value>=1?'¥'+p.value+'万':'¥'+Math.round(p.value*10000)+'元',fontSize:9}}]
+  });
+  let qt=['Q1','Q2','Q3','Q4'],v=qt.map(q=>cd.q[q]||0);
+  c2.setOption({
+    title:{text:prodCat+' 季度销售额趋势',left:'center',top:2,textStyle:{fontSize:12}},
+    tooltip:{trigger:'axis',formatter:ps=>ps[0].name+':<b>¥'+ps[0].value+'万</b>'},
+    grid:{left:'14%',right:'8%',bottom:'10%',top:'14%',containLabel:true},
+    xAxis:{type:'category',data:qt,axisLabel:{fontSize:10}},
+    yAxis:{type:'value',name:'万元',axisLabel:{fontSize:9}},
+    series:[{type:'line',data:v,smooth:true,symbol:'circle',symbolSize:10,lineStyle:{width:3,color:'#d946ef'},itemStyle:{color:'#d946ef',borderColor:'#fff',borderWidth:2},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(217,70,239,.3)'},{offset:1,color:'rgba(217,70,239,0)'}])},label:{show:true,fontSize:10,formatter:p=>'¥'+p.value+'万'}}]
+  });
+  // Click sub to show its quarterly
+  c1.off('click');c1.on('click',function(p){if(p.name){let d=subs.find(dd=>dd.n===p.name);if(d){let qt2=['Q1','Q2','Q3','Q4'],v2=qt2.map(q=>d.q[q]||0);c2.setOption({title:{text:d.n+' · 季度销售额',left:'center',top:2,textStyle:{fontSize:12}},tooltip:{trigger:'axis',formatter:ps=>ps[0].name+':<b>¥'+ps[0].value+'万</b>'},grid:{left:'14%',right:'8%',bottom:'10%',top:'14%',containLabel:true},xAxis:{type:'category',data:qt2,axisLabel:{fontSize:10}},yAxis:{type:'value',name:'万元',axisLabel:{fontSize:9}},series:[{type:'line',data:v2,smooth:true,symbol:'circle',symbolSize:10,lineStyle:{width:3,color:'#f59e0b'},itemStyle:{color:'#f59e0b',borderColor:'#fff',borderWidth:2},areaStyle:{color:new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'rgba(245,158,11,.3)'},{offset:1,color:'rgba(245,158,11,0)'}])},label:{show:true,fontSize:10,formatter:p=>'¥'+p.value+'万'}}]});}}});}
+
+// Navigate
+const renderers={'china':renderChina,'world':renderWorld,'sales':renderSales,'employee':renderEmployee,'purchase':renderPurchase,'pareto':renderPareto,'catcust':renderCatCust,'emp-profile':renderEmpProfile,'prodover':renderProdOver,'proddetail':renderProdDetail};
+function openPanel(pageId){if(!multiMode){activePanels.clear();}activePanels.add(pageId);updateSidebar();refreshMain();}
+function closePanel(pageId){activePanels.delete(pageId);updateSidebar();if(activePanels.size===0){activePanels.add('china');updateSidebar();}refreshMain();}
+function updateSidebar(){document.querySelectorAll('.side-btn').forEach(b=>b.classList.toggle('active',activePanels.has(b.dataset.page)));}
+function refreshMain(){let main=document.getElementById('main');main.querySelectorAll('.chart-wrap').forEach(el=>{let c=echarts.getInstanceByDom(el);if(c)c.dispose();});main.innerHTML='';let sz=activePanels.size;if(sz===1&&!multiMode)main.className='single';else{main.className='multi';if(sz===2)main.classList.add('n2');}[...activePanels].forEach(pageId=>{let wrapper=document.createElement('div');main.appendChild(wrapper);renderers[pageId](wrapper);});}
+
+// Init
+document.getElementById('multiMode').addEventListener('change',function(){multiMode=this.checked;if(!multiMode&&activePanels.size>1){activePanels.clear();activePanels.add('china');updateSidebar();}refreshMain();});
+document.querySelectorAll('.side-btn').forEach(btn=>{btn.addEventListener('click',function(){let pageId=this.dataset.page;if(!multiMode){if(activePanels.has(pageId)&&activePanels.size===1)return;}else{if(activePanels.has(pageId)){closePanel(pageId);return;}}openPanel(pageId);});});
+document.getElementById('selYear').addEventListener('change',renderKPI);document.getElementById('selMonth').addEventListener('change',renderKPI);
+document.querySelectorAll('.q-btn').forEach(btn=>{btn.addEventListener('click',function(){document.querySelectorAll('.q-btn').forEach(b=>b.classList.remove('sel'));this.classList.add('sel');currentQuarter=this.dataset.q;renderKPI();refreshMain();let labels={0:'全年',1:'Q1',2:'Q2',3:'Q3',4:'Q4',h1:'上半年',h2:'下半年'};toast('已切换至 '+labels[this.dataset.q]+' 视图');});});
+loadChinaMap(()=>{});renderKPI();refreshMain();
+</script>
+</body>
+</html>
