@@ -137,7 +137,10 @@ document.getElementById('kv-cust').textContent='464家';
       series:[{type:'map',map:'china',roam:true,zoom:1.2,center:[105,37],label:{show:true,fontSize:9,color:'#451a03'},itemStyle:{borderColor:'rgba(255,255,255,.2)',borderWidth:.6},emphasis:{label:{show:true,fontSize:11,color:'#fff'},itemStyle:{areaColor:'#ef4444',borderColor:'#fff',borderWidth:1.5}},data:CHN_PROVINCE}]
     });
   }
-  fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json').then(function(r){return r.json();}).then(function(geo){echarts.registerMap('china',geo);renderMap();}).catch(function(){c.setOption({title:{text:'中国地图加载中...',left:'center',top:'45%',textStyle:{color:'#5a6f8a',fontSize:14}}});});
+  fetch('./100000_full.json')   
+  .then(function(r){ return r.json(); })
+  .then(function(geo){ echarts.registerMap('china',geo); renderMap(); })
+  .catch(function(){ ... });
 })();
 </script>
 </body>
